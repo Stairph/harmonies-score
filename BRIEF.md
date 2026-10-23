@@ -12,10 +12,10 @@ A phone version of the Harmonies paper score card for Steph's own games: add up 
 - Add, rename, remove players (1 to 6). Names suggested from past games.
 - Finish game saves to a log. Log tab, leaderboard tab, export/import JSON.
 - Autosave of the game in progress.
+- Official landscape and animal icons from the score card (Steph's call, 2026-10-24).
 
 ## Out of scope
 
-- The PDF artwork (official Libellud material; repo is public on Pages).
 - Offline service worker (v1). Sync across devices.
 
 ## Acceptance criteria

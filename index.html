@@ -100,7 +100,12 @@ main { padding: 0 10px; }
 .lab small { font-size: 9px; font-weight: 600; opacity: 0.9; margin-top: 3px; letter-spacing: 0.01em; }
 .dot { display: inline-block; width: 26px; height: 26px; border-radius: 50%; border: 2px solid rgba(0,0,0,0.12); flex: none; }
 .lab .pair { display: flex; align-items: center; gap: 3px; }
-.lab .pair .dot { width: 18px; height: 18px; }
+.ico { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; flex: none; display: block; }
+.ico.wide { width: 40px; height: 24px; border-radius: 6px; object-fit: cover; }
+.ico.sm { width: 20px; height: 20px; }
+.ico.sm.wide { width: 30px; height: 18px; }
+.ico.xs { width: 16px; height: 16px; display: inline-block; vertical-align: -3px; }
+.ico.xs.wide { width: 22px; height: 13px; }
 .pname {
   height: 36px; background: var(--paper); border-radius: 8px;
   font-weight: 700; font-size: 14px; padding: 0 4px;
@@ -195,7 +200,8 @@ nav.tabs button.active { color: #FFF8EC; box-shadow: inset 0 3px 0 #FFF8EC; }
 }
 .panel.show { transform: translateY(0); }
 .kp-top { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
-.kp-top .dot { width: 22px; height: 22px; }
+.kp-top .ico { width: 28px; height: 28px; }
+.kp-top .ico.wide { width: 40px; height: 24px; }
 .kp-title { font-weight: 700; flex: 1; }
 .kp-title small { display: block; font-weight: 500; color: var(--ink-soft); font-size: 13px; }
 .kp-display {
@@ -286,7 +292,7 @@ nav.tabs button.active { color: #FFF8EC; box-shadow: inset 0 3px 0 #FFF8EC; }
 <!-- Keypad -->
 <div class="panel" id="keypad" aria-hidden="true">
   <div class="kp-top">
-    <span class="dot" id="kpDot"></span>
+    <img class="ico" id="kpIco" alt="">
     <div class="kp-title" id="kpTitle"></div>
   </div>
   <div class="kp-display">
@@ -312,12 +318,12 @@ nav.tabs button.active { color: #FFF8EC; box-shadow: inset 0 3px 0 #FFF8EC; }
 
   // ---------- constants ----------
   var ROWS = [
-    { key: 'trees',     label: 'Trees',     color: 'var(--trees)', tint: '#B9DB8E',     group: 'land' },
-    { key: 'mountains', label: 'Mountains', color: 'var(--mountains)', tint: '#C6CCD3', group: 'land' },
-    { key: 'fields',    label: 'Fields',    color: 'var(--fields)', tint: '#F1E68C',    group: 'land' },
-    { key: 'buildings', label: 'Buildings', color: 'var(--buildings)', tint: '#F4A195', group: 'land' },
-    { key: 'water',     label: 'Water',     color: 'var(--water)', tint: '#93D8E4',     group: 'land' },
-    { key: 'animals',   label: 'Animals',   color: 'var(--animals)', tint: '#F4BD7C',   group: 'animal' }
+    { key: 'trees',     label: 'Trees',     color: 'var(--trees)', icon: 'icons/trees.png', tint: '#B9DB8E',     group: 'land' },
+    { key: 'mountains', label: 'Mountains', color: 'var(--mountains)', icon: 'icons/mountains.png', tint: '#C6CCD3', group: 'land' },
+    { key: 'fields',    label: 'Fields',    color: 'var(--fields)', icon: 'icons/fields.png', tint: '#F1E68C',    group: 'land' },
+    { key: 'buildings', label: 'Buildings', color: 'var(--buildings)', icon: 'icons/buildings.png', tint: '#F4A195', group: 'land' },
+    { key: 'water',     label: 'Water',     color: 'var(--water)', icon: 'icons/water.png', tint: '#93D8E4',     group: 'land' },
+    { key: 'animals',   label: 'Animals',   color: 'var(--animals)', icon: 'icons/animals.png', tint: '#F4BD7C',   group: 'animal' }
   ];
   var MAX_PLAYERS = 6;
   var GAME_KEY = 'harmonies.game.v1';
@@ -390,6 +396,10 @@ nav.tabs button.active { color: #FFF8EC; box-shadow: inset 0 3px 0 #FFF8EC; }
   }
   function normName(n) { return String(n || '').trim().toLowerCase(); }
 
+  function icon(r, cls) {
+    return '<img class="ico' + (r.key === 'animals' ? ' wide' : '') + (cls ? ' ' + cls : '') + '" src="' + r.icon + '" alt="' + r.label + '">';
+  }
+
   // ---------- score sheet ----------
   function renderSheet() {
     var players = game.players;
@@ -410,7 +420,7 @@ nav.tabs button.active { color: #FFF8EC; box-shadow: inset 0 3px 0 #FFF8EC; }
 
     ROWS.forEach(function (r, ri) {
       if (r.group === 'animal') html += sepRow();
-      html += '<div class="lab"><span class="dot" style="background:' + r.color + '"></span><small>' + r.label + '</small></div>';
+      html += '<div class="lab">' + icon(r) + '<small>' + r.label + '</small></div>';
       players.forEach(function (p, pi) {
         var expr = p.cells[r.key] || '';
         var empty = expr.replace(/\+/g, '') === '';
@@ -423,9 +433,9 @@ nav.tabs button.active { color: #FFF8EC; box-shadow: inset 0 3px 0 #FFF8EC; }
     });
 
     html += sepRow();
-    html += '<div class="lab"><span class="pair"><span class="dot" style="background:var(--trees)"></span><span class="dot" style="background:var(--water)"></span></span></div>';
+    html += '<div class="lab"><span class="pair">' + icon(ROWS[0], 'sm') + icon(ROWS[4], 'sm') + '</span></div>';
     scores.forEach(function (s) { html += '<div class="val">' + s.land + '</div>'; });
-    html += '<div class="lab"><span class="pair">+<span class="dot" style="background:var(--animals)"></span></span></div>';
+    html += '<div class="lab"><span class="pair">+' + icon(ROWS[5], 'sm') + '</span></div>';
     scores.forEach(function (s) { html += '<div class="val">' + s.animals + '</div>'; });
     html += '<div class="lab">=</div>';
     scores.forEach(function (s) {
@@ -479,7 +489,8 @@ nav.tabs button.active { color: #FFF8EC; box-shadow: inset 0 3px 0 #FFF8EC; }
   function updateKeypad() {
     var p = game.players[kp.p], r = ROWS[kp.r];
     var expr = p.cells[r.key] || '';
-    el('kpDot').style.background = r.color;
+    el('kpIco').src = r.icon;
+    el('kpIco').className = 'ico' + (r.key === 'animals' ? ' wide' : '');
     el('kpTitle').innerHTML = esc(r.label) + '<small>' + esc(p.name) + '</small>';
     el('kpExpr').textContent = expr || ' ';
     el('kpSum').textContent = '= ' + evalExpr(expr);
@@ -706,7 +717,7 @@ nav.tabs button.active { color: #FFF8EC; box-shadow: inset 0 3px 0 #FFF8EC; }
         '<div class="game-body"><table class="mini"><tr><th></th>' +
         sorted.map(function (p) { return '<th>' + esc(p.name) + '</th>'; }).join('') + '</tr>' +
         ROWS.map(function (r) {
-          return '<tr><td><span class="mdot" style="background:' + r.color + '"></span> ' + r.label + '</td>' +
+          return '<tr><td>' + icon(r, 'xs') + ' ' + r.label + '</td>' +
             sorted.map(function (p) { return '<td>' + ((p.rows && p.rows[r.key]) || 0) + '</td>'; }).join('') + '</tr>';
         }).join('') +
         '<tr><td><b>Total</b></td>' + sorted.map(function (p) { return '<td><b>' + p.total + '</b></td>'; }).join('') + '</tr>' +
