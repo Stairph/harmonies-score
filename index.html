@@ -65,7 +65,7 @@ body {
   padding-bottom: calc(72px + var(--safe-b));
   overscroll-behavior-y: none;
 }
-button { font: inherit; color: inherit; border: 0; background: none; cursor: pointer; }
+button { font: inherit; color: inherit; border: 0; background: none; cursor: pointer; margin: 0; padding: 0; -webkit-appearance: none; appearance: none; }
 input { font: inherit; color: inherit; }
 
 header {
@@ -87,45 +87,46 @@ main { padding: 0 10px; }
   background: var(--card); border-radius: var(--radius);
   padding: 6px; overflow-x: auto;
 }
-table.sheet { border-collapse: separate; border-spacing: 3px; width: 100%; }
-.sheet th, .sheet td { padding: 0; text-align: center; }
-.sheet .lab {
-  position: sticky; left: 0; z-index: 1;
-  background: var(--card);
-  width: 42px; min-width: 42px;
+.sheet {
+  display: grid; gap: 4px; align-items: stretch;
+  /* columns set inline: 46px label + one 1fr column per player */
 }
-.dot {
-  display: inline-block; width: 30px; height: 30px; border-radius: 50%;
-  vertical-align: middle; border: 2px solid rgba(0,0,0,0.12);
+.sheet > * { min-width: 0; }
+.lab {
+  position: sticky; left: 0; z-index: 1; background: var(--card);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  color: #FFF8EC; font-weight: 700; font-size: 18px; line-height: 1;
 }
-.lab small { display: block; font-size: 10px; color: #FFF8EC; opacity: 0.85; margin-top: 2px; }
+.lab small { font-size: 9px; font-weight: 600; opacity: 0.9; margin-top: 3px; letter-spacing: 0.01em; }
+.dot { display: inline-block; width: 26px; height: 26px; border-radius: 50%; border: 2px solid rgba(0,0,0,0.12); flex: none; }
+.lab .pair { display: flex; align-items: center; gap: 3px; }
+.lab .pair .dot { width: 18px; height: 18px; }
 .pname {
-  display: block; width: 100%; min-width: 56px; max-width: 30vw;
-  background: var(--paper); border-radius: 8px;
-  padding: 8px 4px; font-weight: 700; font-size: 14px;
+  height: 36px; background: var(--paper); border-radius: 8px;
+  font-weight: 700; font-size: 14px; padding: 0 4px;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .cellbtn {
   display: flex; flex-direction: column; align-items: center; justify-content: center;
-  width: 100%; min-width: 56px; height: 52px;
-  background: var(--cell); border-radius: 10px;
-  font-size: 20px; font-weight: 700; color: var(--ink);
+  height: 52px; border-radius: 10px; background: var(--cell);
+  font-size: 20px; font-weight: 700; color: #3A2614; overflow: hidden;
 }
-.cellbtn .expr { font-size: 10px; font-weight: 500; color: var(--ink-soft); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 4px; }
+.cellbtn .expr { font-size: 10px; font-weight: 500; opacity: 0.7; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 4px; }
 .cellbtn.empty { color: transparent; }
-.cellbtn.editing { outline: 3px solid var(--accent); background: var(--cell-hi); }
-.sub td.val {
+.cellbtn.editing { outline: 3px solid var(--accent); outline-offset: -1px; filter: brightness(1.08); }
+.val {
+  display: flex; align-items: center; justify-content: center;
   background: var(--paper); border-radius: 10px; height: 40px;
   font-weight: 700; font-size: 17px;
 }
-.total td.val {
-  background: var(--paper); border-radius: 10px; height: 52px;
-  font-weight: 800; font-size: 24px;
-}
-.total td.val.lead { background: var(--good); color: #fff; }
-.sub .lab span, .total .lab span { color: #FFF8EC; font-weight: 700; font-size: 18px; }
-.sep td { height: 2px; }
-.sep td.bar { background: rgba(58, 38, 20, 0.35); border-radius: 2px; }
+.val.big { height: 52px; font-size: 24px; font-weight: 800; }
+.val.lead { background: var(--good); color: #fff; }
+.bar { height: 2px; background: rgba(58, 38, 20, 0.35); border-radius: 2px; align-self: center; }
+.bar.blank { background: none; }
+.sheet.tight { gap: 3px; }
+.sheet.tight .cellbtn { font-size: 17px; }
+.sheet.tight .pname { font-size: 12px; }
+.sheet.tight .val.big { font-size: 19px; }
 
 .actions { display: flex; gap: 8px; margin: 12px 0; }
 .actions button {
@@ -247,7 +248,7 @@ nav.tabs button.active { color: #FFF8EC; box-shadow: inset 0 3px 0 #FFF8EC; }
 <main>
   <!-- Score sheet -->
   <section class="view active" id="view-score">
-    <div class="sheet-wrap"><table class="sheet" id="sheet"></table></div>
+    <div class="sheet-wrap"><div class="sheet" id="sheet"></div></div>
     <div class="actions">
       <button id="newGameBtn">Clear scores</button>
       <button class="primary" id="finishBtn">Finish game</button>
@@ -311,12 +312,12 @@ nav.tabs button.active { color: #FFF8EC; box-shadow: inset 0 3px 0 #FFF8EC; }
 
   // ---------- constants ----------
   var ROWS = [
-    { key: 'trees',     label: 'Trees',     color: 'var(--trees)',     group: 'land' },
-    { key: 'mountains', label: 'Mountains', color: 'var(--mountains)', group: 'land' },
-    { key: 'fields',    label: 'Fields',    color: 'var(--fields)',    group: 'land' },
-    { key: 'buildings', label: 'Buildings', color: 'var(--buildings)', group: 'land' },
-    { key: 'water',     label: 'Water',     color: 'var(--water)',     group: 'land' },
-    { key: 'animals',   label: 'Animals',   color: 'var(--animals)',   group: 'animal' }
+    { key: 'trees',     label: 'Trees',     color: 'var(--trees)', tint: '#B9DB8E',     group: 'land' },
+    { key: 'mountains', label: 'Mountains', color: 'var(--mountains)', tint: '#C6CCD3', group: 'land' },
+    { key: 'fields',    label: 'Fields',    color: 'var(--fields)', tint: '#F1E68C',    group: 'land' },
+    { key: 'buildings', label: 'Buildings', color: 'var(--buildings)', tint: '#F4A195', group: 'land' },
+    { key: 'water',     label: 'Water',     color: 'var(--water)', tint: '#93D8E4',     group: 'land' },
+    { key: 'animals',   label: 'Animals',   color: 'var(--animals)', tint: '#F4BD7C',   group: 'animal' }
   ];
   var MAX_PLAYERS = 6;
   var GAME_KEY = 'harmonies.game.v1';
@@ -392,50 +393,51 @@ nav.tabs button.active { color: #FFF8EC; box-shadow: inset 0 3px 0 #FFF8EC; }
   // ---------- score sheet ----------
   function renderSheet() {
     var players = game.players;
+    var n = players.length;
     var scores = players.map(scoreOf);
     var best = Math.max.apply(null, scores.map(function (s) { return s.total; }));
     var html = '';
+    function sepRow() {
+      var h = '<div class="bar blank"></div>';
+      for (var i = 0; i < n; i++) h += '<div class="bar"></div>';
+      return h;
+    }
 
-    // name row
-    html += '<tr><th class="lab"></th>';
+    html += '<div class="lab"></div>';
     players.forEach(function (p, i) {
-      html += '<th><button class="pname" data-player="' + i + '">' + esc(p.name) + '</button></th>';
+      html += '<button class="pname" data-player="' + i + '">' + esc(p.name) + '</button>';
     });
-    html += '</tr>';
 
-    // score rows
     ROWS.forEach(function (r, ri) {
-      if (r.group === 'animal') {
-        html += '<tr class="sep"><td class="lab"></td>' + players.map(function () { return '<td class="bar"></td>'; }).join('') + '</tr>';
-      }
-      html += '<tr><td class="lab"><span class="dot" style="background:' + r.color + '"></span><small>' + r.label + '</small></td>';
+      if (r.group === 'animal') html += sepRow();
+      html += '<div class="lab"><span class="dot" style="background:' + r.color + '"></span><small>' + r.label + '</small></div>';
       players.forEach(function (p, pi) {
         var expr = p.cells[r.key] || '';
-        var val = evalExpr(expr);
-        var showExpr = expr.indexOf('+') !== -1;
         var empty = expr.replace(/\+/g, '') === '';
-        html += '<td><button class="cellbtn' + (empty ? ' empty' : '') + '" data-p="' + pi + '" data-r="' + ri + '">' +
-          (empty ? '0' : val) +
-          (showExpr && !empty ? '<span class="expr">' + esc(expr) + '</span>' : '') +
-          '</button></td>';
+        var showExpr = !empty && expr.indexOf('+') !== -1;
+        html += '<button class="cellbtn' + (empty ? ' empty' : '') + '" style="background:' + r.tint + '" data-p="' + pi + '" data-r="' + ri + '">' +
+          (empty ? '0' : evalExpr(expr)) +
+          (showExpr ? '<span class="expr">' + esc(expr) + '</span>' : '') +
+          '</button>';
       });
-      html += '</tr>';
     });
 
-    // subtotals and total
-    html += '<tr class="sep"><td class="lab"></td>' + players.map(function () { return '<td class="bar"></td>'; }).join('') + '</tr>';
-    html += '<tr class="sub"><td class="lab"><span class="dot" style="background:linear-gradient(135deg,var(--trees),var(--water))"></span></td>' +
-      scores.map(function (s) { return '<td class="val">' + s.land + '</td>'; }).join('') + '</tr>';
-    html += '<tr class="sub"><td class="lab"><span>+</span> <span class="dot" style="background:var(--animals);width:22px;height:22px"></span></td>' +
-      scores.map(function (s) { return '<td class="val">' + s.animals + '</td>'; }).join('') + '</tr>';
-    html += '<tr class="total"><td class="lab"><span>=</span></td>' +
-      scores.map(function (s) {
-        var lead = best > 0 && s.total === best && players.length > 1;
-        return '<td class="val' + (lead ? ' lead' : '') + '">' + s.total + '</td>';
-      }).join('') + '</tr>';
+    html += sepRow();
+    html += '<div class="lab"><span class="pair"><span class="dot" style="background:var(--trees)"></span><span class="dot" style="background:var(--water)"></span></span></div>';
+    scores.forEach(function (s) { html += '<div class="val">' + s.land + '</div>'; });
+    html += '<div class="lab"><span class="pair">+<span class="dot" style="background:var(--animals)"></span></span></div>';
+    scores.forEach(function (s) { html += '<div class="val">' + s.animals + '</div>'; });
+    html += '<div class="lab">=</div>';
+    scores.forEach(function (s) {
+      var lead = best > 0 && s.total === best && n > 1;
+      html += '<div class="val big' + (lead ? ' lead' : '') + '">' + s.total + '</div>';
+    });
 
-    el('sheet').innerHTML = html;
-    el('addPlayerBtn').style.visibility = players.length >= MAX_PLAYERS ? 'hidden' : 'visible';
+    var sheet = el('sheet');
+    sheet.style.gridTemplateColumns = '46px repeat(' + n + ', minmax(' + (n >= 6 ? 40 : n >= 5 ? 44 : 56) + 'px, 1fr))';
+    sheet.classList.toggle('tight', n >= 5);
+    sheet.innerHTML = html;
+    el('addPlayerBtn').style.visibility = n >= MAX_PLAYERS ? 'hidden' : 'visible';
   }
 
   el('sheet').addEventListener('click', function (e) {
