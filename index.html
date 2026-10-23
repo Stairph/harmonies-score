@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<!-- Harmonies Score v1.0 - built by Steph, 2026 -->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="author" content="Steph">
+<meta name="description" content="Score sheet for the board game Harmonies, with a game log and leaderboard.">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Harmonies">
+<meta name="application-name" content="Harmonies">
+<meta name="theme-color" content="#E9D3A6">
+<title>Harmonies Score</title>
+
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23A8743F'/%3E%3Ccircle cx='10' cy='11' r='4' fill='%238DBF4E'/%3E%3Ccircle cx='22' cy='11' r='4' fill='%239AA3AD'/%3E%3Ccircle cx='16' cy='17' r='4' fill='%23E9D84A'/%3E%3Ccircle cx='10' cy='23' r='4' fill='%23E5675A'/%3E%3Ccircle cx='22' cy='23' r='4' fill='%233FB8CC'/%3E%3C/svg%3E">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect width='180' height='180' fill='%23A8743F'/%3E%3Ccircle cx='58' cy='60' r='22' fill='%238DBF4E'/%3E%3Ccircle cx='122' cy='60' r='22' fill='%239AA3AD'/%3E%3Ccircle cx='90' cy='92' r='22' fill='%23E9D84A'/%3E%3Ccircle cx='58' cy='124' r='22' fill='%23E5675A'/%3E%3Ccircle cx='122' cy='124' r='22' fill='%233FB8CC'/%3E%3C/svg%3E">
+<link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%22Harmonies%20Score%22%2C%22short_name%22%3A%22Harmonies%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%23E9D3A6%22%2C%22theme_color%22%3A%22%23E9D3A6%22%2C%22orientation%22%3A%22portrait%22%7D">
+
+<style>
+:root {
+  --bg: #E9D3A6;
+  --card: #B98A55;
+  --card-deep: #A8743F;
+  --cell: #F4BD7C;
+  --cell-hi: #FBE3C2;
+  --ink: #3A2614;
+  --ink-soft: #6B4E30;
+  --paper: #FFF8EC;
+  --line: rgba(58, 38, 20, 0.18);
+  --accent: #C2552E;
+  --good: #3F7D3A;
+  --trees: #8DBF4E;
+  --mountains: #9AA3AD;
+  --fields: #E9D84A;
+  --buildings: #E5675A;
+  --water: #3FB8CC;
+  --animals: #E08A3C;
+  --radius: 12px;
+  --safe-b: env(safe-area-inset-bottom, 0px);
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #241A11;
+    --card: #4A3624;
+    --card-deep: #3A2A1B;
+    --cell: #6B4D2F;
+    --cell-hi: #8A6640;
+    --ink: #F6E9D4;
+    --ink-soft: #CBB494;
+    --paper: #2F2217;
+    --line: rgba(246, 233, 212, 0.16);
+    --accent: #F0895E;
+    --good: #8FD08A;
+  }
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font: 16px/1.35 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  min-height: 100vh;
+  padding-bottom: calc(72px + var(--safe-b));
+  overscroll-behavior-y: none;
+}
+button { font: inherit; color: inherit; border: 0; background: none; cursor: pointer; }
+input { font: inherit; color: inherit; }
+
+header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: calc(12px + env(safe-area-inset-top, 0px)) 16px 8px;
+}
+header h1 { margin: 0; font-size: 22px; letter-spacing: 0.02em; }
+.hbtn {
+  background: var(--card-deep); color: #FFF8EC;
+  padding: 8px 12px; border-radius: 999px; font-size: 14px; font-weight: 600;
+}
+
+main { padding: 0 10px; }
+.view { display: none; }
+.view.active { display: block; }
+
+/* ---------- score sheet ---------- */
+.sheet-wrap {
+  background: var(--card); border-radius: var(--radius);
+  padding: 6px; overflow-x: auto;
+}
+table.sheet { border-collapse: separate; border-spacing: 3px; width: 100%; }
+.sheet th, .sheet td { padding: 0; text-align: center; }
+.sheet .lab {
+  position: sticky; left: 0; z-index: 1;
+  background: var(--card);
+  width: 42px; min-width: 42px;
+}
+.dot {
+  display: inline-block; width: 30px; height: 30px; border-radius: 50%;
+  vertical-align: middle; border: 2px solid rgba(0,0,0,0.12);
+}
+.lab small { display: block; font-size: 10px; color: #FFF8EC; opacity: 0.85; margin-top: 2px; }
+.pname {
+  display: block; width: 100%; min-width: 56px; max-width: 30vw;
+  background: var(--paper); border-radius: 8px;
+  padding: 8px 4px; font-weight: 700; font-size: 14px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.cellbtn {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  width: 100%; min-width: 56px; height: 52px;
+  background: var(--cell); border-radius: 10px;
+  font-size: 20px; font-weight: 700; color: var(--ink);
+}
+.cellbtn .expr { font-size: 10px; font-weight: 500; color: var(--ink-soft); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 4px; }
+.cellbtn.empty { color: transparent; }
+.cellbtn.editing { outline: 3px solid var(--accent); background: var(--cell-hi); }
+.sub td.val {
+  background: var(--paper); border-radius: 10px; height: 40px;
+  font-weight: 700; font-size: 17px;
+}
+.total td.val {
+  background: var(--paper); border-radius: 10px; height: 52px;
+  font-weight: 800; font-size: 24px;
+}
+.total td.val.lead { background: var(--good); color: #fff; }
+.sub .lab span, .total .lab span { color: #FFF8EC; font-weight: 700; font-size: 18px; }
+.sep td { height: 2px; }
+.sep td.bar { background: rgba(58, 38, 20, 0.35); border-radius: 2px; }
+
+.actions { display: flex; gap: 8px; margin: 12px 0; }
+.actions button {
+  flex: 1; padding: 14px 8px; border-radius: var(--radius);
+  font-weight: 700; background: var(--paper); border: 1px solid var(--line);
+}
+.actions button.primary { background: var(--accent); color: #fff; border-color: transparent; }
+.hint { color: var(--ink-soft); font-size: 13px; text-align: center; margin: 4px 0 16px; }
+
+/* ---------- lists ---------- */
+.card {
+  background: var(--paper); border-radius: var(--radius);
+  border: 1px solid var(--line); margin-bottom: 10px; overflow: hidden;
+}
+.empty-state { text-align: center; color: var(--ink-soft); padding: 40px 16px; }
+.game-head { display: flex; justify-content: space-between; align-items: center; padding: 12px 14px; width: 100%; text-align: left; }
+.game-head .date { font-size: 13px; color: var(--ink-soft); }
+.game-head .who { font-weight: 700; }
+.game-body { display: none; padding: 0 14px 12px; }
+.card.open .game-body { display: block; }
+.mini { width: 100%; border-collapse: collapse; font-size: 14px; }
+.mini th, .mini td { padding: 6px 4px; text-align: center; border-bottom: 1px solid var(--line); }
+.mini th:first-child, .mini td:first-child { text-align: left; }
+.mini .mdot { display: inline-block; width: 12px; height: 12px; border-radius: 50%; }
+.danger { color: var(--accent); font-weight: 600; padding: 10px 0 0; }
+
+table.board { width: 100%; border-collapse: collapse; font-size: 15px; }
+.board th, .board td { padding: 12px 6px; text-align: right; border-bottom: 1px solid var(--line); }
+.board th { font-size: 12px; color: var(--ink-soft); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
+.board th:first-child, .board td:first-child { text-align: left; }
+.board td:first-child { font-weight: 700; }
+.board tr.first td:first-child::after { content: " \2605"; color: var(--animals); }
+
+.section-title { font-size: 13px; font-weight: 700; color: var(--ink-soft); text-transform: uppercase; letter-spacing: 0.05em; margin: 16px 4px 8px; }
+.row-btns { display: flex; gap: 8px; }
+.row-btns button, .row-btns label {
+  flex: 1; text-align: center; padding: 12px; border-radius: var(--radius);
+  background: var(--paper); border: 1px solid var(--line); font-weight: 600; cursor: pointer;
+}
+
+/* ---------- tab bar ---------- */
+nav.tabs {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 10;
+  display: flex; background: var(--card-deep);
+  padding-bottom: var(--safe-b);
+}
+nav.tabs button {
+  flex: 1; padding: 14px 0 16px; color: rgba(255, 248, 236, 0.65);
+  font-weight: 700; font-size: 15px;
+}
+nav.tabs button.active { color: #FFF8EC; box-shadow: inset 0 3px 0 #FFF8EC; }
+
+/* ---------- sheets (keypad, dialogs) ---------- */
+.scrim {
+  position: fixed; inset: 0; z-index: 20; background: rgba(0, 0, 0, 0.35);
+  display: none;
+}
+.scrim.show { display: block; }
+.panel {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 30;
+  background: var(--paper); border-radius: 18px 18px 0 0;
+  padding: 14px 14px calc(14px + var(--safe-b));
+  transform: translateY(105%); transition: transform 0.18s ease-out;
+  max-width: 560px; margin: 0 auto;
+  box-shadow: 0 -6px 24px rgba(0,0,0,0.18);
+}
+.panel.show { transform: translateY(0); }
+.kp-top { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.kp-top .dot { width: 22px; height: 22px; }
+.kp-title { font-weight: 700; flex: 1; }
+.kp-title small { display: block; font-weight: 500; color: var(--ink-soft); font-size: 13px; }
+.kp-display {
+  background: var(--bg); border-radius: 10px; padding: 10px 12px; margin-bottom: 10px;
+  display: flex; justify-content: space-between; align-items: baseline; gap: 10px; min-height: 52px;
+}
+.kp-expr { font-size: 20px; font-weight: 600; word-break: break-all; }
+.kp-sum { font-size: 26px; font-weight: 800; white-space: nowrap; }
+.keys { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.keys button {
+  height: 56px; border-radius: 12px; font-size: 24px; font-weight: 600;
+  background: var(--bg); border: 1px solid var(--line);
+}
+.keys button:active { filter: brightness(0.92); }
+.keys .op { background: var(--cell); }
+.keys .done { background: var(--accent); color: #fff; font-size: 18px; font-weight: 700; }
+.keys .small { font-size: 16px; }
+
+.dlg h2 { margin: 2px 0 12px; font-size: 19px; }
+.dlg p { margin: 0 0 14px; color: var(--ink-soft); }
+.dlg input[type=text] {
+  width: 100%; padding: 14px; border-radius: 10px; border: 1px solid var(--line);
+  background: var(--bg); font-size: 18px; margin-bottom: 12px;
+}
+.dlg .btns { display: flex; gap: 8px; }
+.dlg .btns button {
+  flex: 1; padding: 14px; border-radius: 12px; font-weight: 700;
+  background: var(--bg); border: 1px solid var(--line);
+}
+.dlg .btns .primary { background: var(--accent); color: #fff; border-color: transparent; }
+.dlg .btns .warn { color: var(--accent); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin: -4px 0 12px; }
+.chips button { padding: 6px 12px; border-radius: 999px; background: var(--bg); border: 1px solid var(--line); font-size: 14px; }
+
+.toast {
+  position: fixed; left: 50%; bottom: calc(84px + var(--safe-b)); transform: translateX(-50%);
+  background: var(--ink); color: var(--paper); padding: 10px 16px; border-radius: 999px;
+  font-size: 14px; z-index: 40; opacity: 0; transition: opacity 0.2s; pointer-events: none;
+}
+.toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1 id="title">Harmonies</h1>
+  <button class="hbtn" id="addPlayerBtn">+ Player</button>
+</header>
+
+<main>
+  <!-- Score sheet -->
+  <section class="view active" id="view-score">
+    <div class="sheet-wrap"><table class="sheet" id="sheet"></table></div>
+    <div class="actions">
+      <button id="newGameBtn">Clear scores</button>
+      <button class="primary" id="finishBtn">Finish game</button>
+    </div>
+    <p class="hint">Tap a box to score it. Use + to add several numbers, for example one per animal card. Tap a name to rename or remove.</p>
+  </section>
+
+  <!-- Log -->
+  <section class="view" id="view-log">
+    <div id="logList"></div>
+  </section>
+
+  <!-- Leaderboard -->
+  <section class="view" id="view-board">
+    <div class="card" style="padding: 4px 14px;" id="boardCard"></div>
+    <p class="hint">Wins and win rate count games with 2 or more players. Ties share the win.</p>
+    <div class="section-title">Backup</div>
+    <div class="row-btns">
+      <button id="exportBtn">Export log</button>
+      <label for="importFile">Import log</label>
+      <input type="file" id="importFile" accept="application/json,.json" hidden>
+    </div>
+    <p class="hint">The log lives in this browser only. Export now and then to keep a copy.</p>
+  </section>
+</main>
+
+<nav class="tabs">
+  <button data-tab="score" class="active">Score</button>
+  <button data-tab="log">Log</button>
+  <button data-tab="board">Leaderboard</button>
+</nav>
+
+<div class="scrim" id="scrim"></div>
+
+<!-- Keypad -->
+<div class="panel" id="keypad" aria-hidden="true">
+  <div class="kp-top">
+    <span class="dot" id="kpDot"></span>
+    <div class="kp-title" id="kpTitle"></div>
+  </div>
+  <div class="kp-display">
+    <span class="kp-expr" id="kpExpr"></span>
+    <span class="kp-sum" id="kpSum"></span>
+  </div>
+  <div class="keys">
+    <button data-k="7">7</button><button data-k="8">8</button><button data-k="9">9</button><button data-k="back" class="op small" aria-label="Backspace">&#9003;</button>
+    <button data-k="4">4</button><button data-k="5">5</button><button data-k="6">6</button><button data-k="+" class="op">+</button>
+    <button data-k="1">1</button><button data-k="2">2</button><button data-k="3">3</button><button data-k="clear" class="op small">Clear</button>
+    <button data-k="prev" class="small">&#8593; Prev</button><button data-k="0">0</button><button data-k="next" class="small">Next &#8595;</button><button data-k="done" class="done">Done</button>
+  </div>
+</div>
+
+<!-- Generic dialog -->
+<div class="panel dlg" id="dialog" aria-hidden="true"></div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function () {
+  'use strict';
+
+  // ---------- constants ----------
+  var ROWS = [
+    { key: 'trees',     label: 'Trees',     color: 'var(--trees)',     group: 'land' },
+    { key: 'mountains', label: 'Mountains', color: 'var(--mountains)', group: 'land' },
+    { key: 'fields',    label: 'Fields',    color: 'var(--fields)',    group: 'land' },
+    { key: 'buildings', label: 'Buildings', color: 'var(--buildings)', group: 'land' },
+    { key: 'water',     label: 'Water',     color: 'var(--water)',     group: 'land' },
+    { key: 'animals',   label: 'Animals',   color: 'var(--animals)',   group: 'animal' }
+  ];
+  var MAX_PLAYERS = 6;
+  var GAME_KEY = 'harmonies.game.v1';
+  var LOG_KEY = 'harmonies.log.v1';
+
+  // ---------- storage (never throws) ----------
+  function load(key, fallback) {
+    try {
+      var raw = localStorage.getItem(key);
+      return raw ? JSON.parse(raw) : fallback;
+    } catch (e) { return fallback; }
+  }
+  function save(key, value) {
+    try { localStorage.setItem(key, JSON.stringify(value)); return true; }
+    catch (e) { return false; }
+  }
+
+  function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+  function emptyCells() { var c = {}; ROWS.forEach(function (r) { c[r.key] = ''; }); return c; }
+  function newPlayer(name) { return { id: uid(), name: name, cells: emptyCells() }; }
+
+  var game = load(GAME_KEY, null);
+  if (!game || !Array.isArray(game.players)) {
+    game = { players: [newPlayer('Player 1'), newPlayer('Player 2')] };
+  }
+  var log = load(LOG_KEY, []);
+  if (!Array.isArray(log)) log = [];
+
+  function persistGame() { save(GAME_KEY, game); }
+  function persistLog() {
+    if (!save(LOG_KEY, log)) toast('Could not save the log in this browser');
+  }
+
+  // ---------- maths ----------
+  // A cell holds "4+6+10" style text. Empty parts count as 0.
+  function evalExpr(s) {
+    if (!s) return 0;
+    return String(s).split('+').reduce(function (sum, part) {
+      var n = parseInt(part, 10);
+      return sum + (isNaN(n) ? 0 : n);
+    }, 0);
+  }
+  function scoreOf(p) {
+    var land = 0, animals = 0, byRow = {};
+    ROWS.forEach(function (r) {
+      var v = evalExpr(p.cells[r.key]);
+      byRow[r.key] = v;
+      if (r.group === 'land') land += v; else animals += v;
+    });
+    return { byRow: byRow, land: land, animals: animals, total: land + animals };
+  }
+  function hasAnyScore(p) {
+    return ROWS.some(function (r) { return String(p.cells[r.key] || '').replace(/\+/g, '') !== ''; });
+  }
+
+  // ---------- helpers ----------
+  function esc(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+  function el(id) { return document.getElementById(id); }
+  var toastTimer;
+  function toast(msg) {
+    var t = el('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { t.classList.remove('show'); }, 1800);
+  }
+  function normName(n) { return String(n || '').trim().toLowerCase(); }
+
+  // ---------- score sheet ----------
+  function renderSheet() {
+    var players = game.players;
+    var scores = players.map(scoreOf);
+    var best = Math.max.apply(null, scores.map(function (s) { return s.total; }));
+    var html = '';
+
+    // name row
+    html += '<tr><th class="lab"></th>';
+    players.forEach(function (p, i) {
+      html += '<th><button class="pname" data-player="' + i + '">' + esc(p.name) + '</button></th>';
+    });
+    html += '</tr>';
+
+    // score rows
+    ROWS.forEach(function (r, ri) {
+      if (r.group === 'animal') {
+        html += '<tr class="sep"><td class="lab"></td>' + players.map(function () { return '<td class="bar"></td>'; }).join('') + '</tr>';
+      }
+      html += '<tr><td class="lab"><span class="dot" style="background:' + r.color + '"></span><small>' + r.label + '</small></td>';
+      players.forEach(function (p, pi) {
+        var expr = p.cells[r.key] || '';
+        var val = evalExpr(expr);
+        var showExpr = expr.indexOf('+') !== -1;
+        var empty = expr.replace(/\+/g, '') === '';
+        html += '<td><button class="cellbtn' + (empty ? ' empty' : '') + '" data-p="' + pi + '" data-r="' + ri + '">' +
+          (empty ? '0' : val) +
+          (showExpr && !empty ? '<span class="expr">' + esc(expr) + '</span>' : '') +
+          '</button></td>';
+      });
+      html += '</tr>';
+    });
+
+    // subtotals and total
+    html += '<tr class="sep"><td class="lab"></td>' + players.map(function () { return '<td class="bar"></td>'; }).join('') + '</tr>';
+    html += '<tr class="sub"><td class="lab"><span class="dot" style="background:linear-gradient(135deg,var(--trees),var(--water))"></span></td>' +
+      scores.map(function (s) { return '<td class="val">' + s.land + '</td>'; }).join('') + '</tr>';
+    html += '<tr class="sub"><td class="lab"><span>+</span> <span class="dot" style="background:var(--animals);width:22px;height:22px"></span></td>' +
+      scores.map(function (s) { return '<td class="val">' + s.animals + '</td>'; }).join('') + '</tr>';
+    html += '<tr class="total"><td class="lab"><span>=</span></td>' +
+      scores.map(function (s) {
+        var lead = best > 0 && s.total === best && players.length > 1;
+        return '<td class="val' + (lead ? ' lead' : '') + '">' + s.total + '</td>';
+      }).join('') + '</tr>';
+
+    el('sheet').innerHTML = html;
+    el('addPlayerBtn').style.visibility = players.length >= MAX_PLAYERS ? 'hidden' : 'visible';
+  }
+
+  el('sheet').addEventListener('click', function (e) {
+    var cell = e.target.closest('.cellbtn');
+    if (cell) { openKeypad(+cell.dataset.p, +cell.dataset.r); return; }
+    var name = e.target.closest('.pname');
+    if (name) openPlayerDialog(+name.dataset.player);
+  });
+
+  // ---------- keypad ----------
+  var kp = { p: -1, r: -1 };
+
+  function openKeypad(p, r) {
+    kp.p = p; kp.r = r;
+    showScrim();
+    el('keypad').classList.add('show');
+    el('keypad').setAttribute('aria-hidden', 'false');
+    updateKeypad();
+  }
+  function closeKeypad() {
+    tidyCell();
+    kp.p = -1; kp.r = -1;
+    el('keypad').classList.remove('show');
+    el('keypad').setAttribute('aria-hidden', 'true');
+    document.body.style.paddingBottom = '';
+    hideScrim();
+    renderSheet();
+  }
+  // Drop a trailing or doubled "+" so stored values stay clean.
+  function tidyCell() {
+    if (kp.p < 0) return;
+    var p = game.players[kp.p];
+    if (!p) return;
+    var key = ROWS[kp.r].key;
+    var v = String(p.cells[key] || '').replace(/\++/g, '+').replace(/^\+|\+$/g, '');
+    p.cells[key] = v;
+    persistGame();
+  }
+  function updateKeypad() {
+    var p = game.players[kp.p], r = ROWS[kp.r];
+    var expr = p.cells[r.key] || '';
+    el('kpDot').style.background = r.color;
+    el('kpTitle').innerHTML = esc(r.label) + '<small>' + esc(p.name) + '</small>';
+    el('kpExpr').textContent = expr || ' ';
+    el('kpSum').textContent = '= ' + evalExpr(expr);
+    renderSheet();
+    var btn = document.querySelector('.cellbtn[data-p="' + kp.p + '"][data-r="' + kp.r + '"]');
+    if (btn) {
+      btn.classList.add('editing');
+      keepVisible(btn);
+    }
+  }
+  // Scroll so the box being edited sits above the keypad.
+  function keepVisible(btn) {
+    var padH = el('keypad').offsetHeight;
+    document.body.style.paddingBottom = (padH + 16) + 'px';
+    var r = btn.getBoundingClientRect();
+    var limit = window.innerHeight - padH - 12;
+    if (r.bottom > limit) window.scrollBy(0, r.bottom - limit);
+    else if (r.top < 8) window.scrollBy(0, r.top - 8);
+  }
+  function moveCell(step) {
+    tidyCell();
+    var next = kp.r + step;
+    if (next >= ROWS.length) {
+      if (kp.p + 1 < game.players.length) { kp.p += 1; next = 0; }
+      else { closeKeypad(); return; }
+    } else if (next < 0) {
+      if (kp.p > 0) { kp.p -= 1; next = ROWS.length - 1; }
+      else next = 0;
+    }
+    kp.r = next;
+    updateKeypad();
+  }
+
+  document.querySelector('#keypad .keys').addEventListener('click', function (e) {
+    var b = e.target.closest('button');
+    if (!b || kp.p < 0) return;
+    var k = b.dataset.k;
+    var p = game.players[kp.p], key = ROWS[kp.r].key;
+    var v = String(p.cells[key] || '');
+    if (k === 'done') { closeKeypad(); return; }
+    if (k === 'next') { moveCell(1); return; }
+    if (k === 'prev') { moveCell(-1); return; }
+    if (k === 'back') v = v.slice(0, -1);
+    else if (k === 'clear') v = '';
+    else if (k === '+') { if (v !== '' && v.slice(-1) !== '+') v += '+'; }
+    else {
+      // digits: cap each number at 3 digits, drop leading zeros
+      var parts = v.split('+');
+      var last = parts[parts.length - 1];
+      if (last === '0') last = '';
+      if (last.length < 3) last += k;
+      parts[parts.length - 1] = last;
+      v = parts.join('+');
+    }
+    p.cells[key] = v;
+    persistGame();
+    updateKeypad();
+  });
+
+  // ---------- scrim / dialog ----------
+  function showScrim() { el('scrim').classList.add('show'); }
+  function hideScrim() { el('scrim').classList.remove('show'); }
+  el('scrim').addEventListener('click', function () {
+    if (el('keypad').classList.contains('show')) closeKeypad();
+    else closeDialog();
+  });
+
+  function openDialog(html, wire) {
+    var d = el('dialog');
+    d.innerHTML = html;
+    showScrim();
+    d.classList.add('show');
+    d.setAttribute('aria-hidden', 'false');
+    if (wire) wire(d);
+  }
+  function closeDialog() {
+    var d = el('dialog');
+    d.classList.remove('show');
+    d.setAttribute('aria-hidden', 'true');
+    hideScrim();
+    var active = document.activeElement;
+    if (active && active.blur) active.blur();
+  }
+  function confirmDialog(title, body, okLabel, onOk) {
+    openDialog(
+      '<h2>' + esc(title) + '</h2><p>' + esc(body) + '</p>' +
+      '<div class="btns"><button data-a="cancel">Cancel</button><button class="primary" data-a="ok">' + esc(okLabel) + '</button></div>',
+      function (d) {
+        d.querySelector('[data-a=cancel]').onclick = closeDialog;
+        d.querySelector('[data-a=ok]').onclick = function () { closeDialog(); onOk(); };
+      }
+    );
+  }
+
+  // Names used before, minus the ones already at the table.
+  function knownNames(exceptIndex) {
+    var seen = {}, out = [];
+    var taken = {};
+    game.players.forEach(function (p, i) { if (i !== exceptIndex) taken[normName(p.name)] = true; });
+    log.slice().reverse().forEach(function (g) {
+      g.players.forEach(function (p) {
+        var n = normName(p.name);
+        if (!seen[n] && !taken[n]) { seen[n] = true; out.push(p.name); }
+      });
+    });
+    return out.slice(0, 12);
+  }
+
+  function nameDialog(title, current, exceptIndex, extraButtons, onSave) {
+    var chips = knownNames(exceptIndex).filter(function (n) { return normName(n) !== normName(current); });
+    openDialog(
+      '<h2>' + esc(title) + '</h2>' +
+      '<input type="text" id="nameInput" maxlength="20" autocomplete="off" autocapitalize="words" value="' + esc(current) + '">' +
+      (chips.length ? '<div class="chips">' + chips.map(function (n) { return '<button data-name="' + esc(n) + '">' + esc(n) + '</button>'; }).join('') + '</div>' : '') +
+      '<div class="btns">' + (extraButtons || '') + '<button data-a="cancel">Cancel</button><button class="primary" data-a="save">Save</button></div>',
+      function (d) {
+        var input = d.querySelector('#nameInput');
+        setTimeout(function () { input.focus(); input.select(); }, 60);
+        d.querySelectorAll('.chips button').forEach(function (b) {
+          b.onclick = function () { input.value = b.dataset.name; };
+        });
+        d.querySelector('[data-a=cancel]').onclick = closeDialog;
+        function submit() {
+          var v = input.value.trim();
+          if (!v) { input.focus(); return; }
+          closeDialog();
+          onSave(v);
+        }
+        d.querySelector('[data-a=save]').onclick = submit;
+        input.addEventListener('keydown', function (e) { if (e.key === 'Enter') submit(); });
+        var rm = d.querySelector('[data-a=remove]');
+        if (rm && extraButtons) rm.onclick = function () { closeDialog(); onSave(null, true); };
+      }
+    );
+  }
+
+  el('addPlayerBtn').addEventListener('click', function () {
+    if (game.players.length >= MAX_PLAYERS) return;
+    nameDialog('Add player', '', -1, '', function (name) {
+      game.players.push(newPlayer(name));
+      persistGame();
+      renderSheet();
+    });
+  });
+
+  function openPlayerDialog(i) {
+    var p = game.players[i];
+    var canRemove = game.players.length > 1;
+    nameDialog('Player', p.name, i, canRemove ? '<button class="warn" data-a="remove">Remove</button>' : '', function (name, remove) {
+      if (remove) {
+        var go = function () {
+          game.players.splice(i, 1);
+          persistGame();
+          renderSheet();
+        };
+        if (hasAnyScore(p)) confirmDialog('Remove ' + p.name + '?', 'Their scores for this game will be lost.', 'Remove', go);
+        else go();
+        return;
+      }
+      p.name = name;
+      persistGame();
+      renderSheet();
+    });
+  }
+
+  // ---------- new / finish ----------
+  function clearScores() {
+    game.players.forEach(function (p) { p.cells = emptyCells(); });
+    persistGame();
+    renderSheet();
+  }
+  el('newGameBtn').addEventListener('click', function () {
+    if (!game.players.some(hasAnyScore)) { toast('Nothing to clear'); return; }
+    confirmDialog('Clear scores?', 'Players stay. This game is not saved to the log.', 'Clear', clearScores);
+  });
+
+  el('finishBtn').addEventListener('click', function () {
+    if (!game.players.some(hasAnyScore)) { toast('Enter some scores first'); return; }
+    var entry = buildEntry();
+    var body = entry.players.length > 1
+      ? 'Winner: ' + entry.winners.join(' & ') + ' with ' + entry.best + '. Saves to the log and clears the sheet.'
+      : 'Solo game, ' + entry.best + ' points. Saves to the log and clears the sheet.';
+    confirmDialog('Finish game?', body, 'Save', function () {
+      log.push(entry);
+      persistLog();
+      clearScores();
+      toast('Game saved to the log');
+    });
+  });
+
+  function buildEntry() {
+    var players = game.players.map(function (p) {
+      var s = scoreOf(p);
+      return { name: p.name.trim(), rows: s.byRow, land: s.land, animals: s.animals, total: s.total };
+    });
+    var best = Math.max.apply(null, players.map(function (p) { return p.total; }));
+    var winners = players.filter(function (p) { return p.total === best; }).map(function (p) { return p.name; });
+    return { id: uid(), date: new Date().toISOString(), players: players, winners: winners, best: best };
+  }
+
+  // ---------- log ----------
+  function fmtDate(iso) {
+    var d = new Date(iso);
+    if (isNaN(d)) return '';
+    return d.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }) +
+      ', ' + d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+  }
+
+  function renderLog() {
+    var list = el('logList');
+    if (!log.length) {
+      list.innerHTML = '<div class="empty-state">No games yet.<br>Finish a game to see it here.</div>';
+      return;
+    }
+    var html = '';
+    log.slice().reverse().forEach(function (g) {
+      var sorted = g.players.slice().sort(function (a, b) { return b.total - a.total; });
+      var who = g.players.length > 1
+        ? esc(g.winners.join(' & ')) + ' won, ' + g.best
+        : esc(g.players[0].name) + ', solo, ' + g.best;
+      html += '<div class="card" data-id="' + esc(g.id) + '">' +
+        '<button class="game-head"><span><span class="who">' + who + '</span><br><span class="date">' + esc(fmtDate(g.date)) + '</span></span>' +
+        '<span class="date">' + g.players.length + 'P</span></button>' +
+        '<div class="game-body"><table class="mini"><tr><th></th>' +
+        sorted.map(function (p) { return '<th>' + esc(p.name) + '</th>'; }).join('') + '</tr>' +
+        ROWS.map(function (r) {
+          return '<tr><td><span class="mdot" style="background:' + r.color + '"></span> ' + r.label + '</td>' +
+            sorted.map(function (p) { return '<td>' + ((p.rows && p.rows[r.key]) || 0) + '</td>'; }).join('') + '</tr>';
+        }).join('') +
+        '<tr><td><b>Total</b></td>' + sorted.map(function (p) { return '<td><b>' + p.total + '</b></td>'; }).join('') + '</tr>' +
+        '</table><button class="danger" data-del="' + esc(g.id) + '">Delete this game</button></div></div>';
+    });
+    list.innerHTML = html;
+  }
+
+  el('logList').addEventListener('click', function (e) {
+    var del = e.target.closest('[data-del]');
+    if (del) {
+      var id = del.dataset.del;
+      confirmDialog('Delete this game?', 'It will be removed from the log and the leaderboard.', 'Delete', function () {
+        log = log.filter(function (g) { return g.id !== id; });
+        persistLog();
+        renderLog();
+      });
+      return;
+    }
+    var head = e.target.closest('.game-head');
+    if (head) head.parentElement.classList.toggle('open');
+  });
+
+  // ---------- leaderboard ----------
+  function renderBoard() {
+    var stats = {};
+    log.forEach(function (g) {
+      var multi = g.players.length > 1;
+      var winSet = {};
+      g.winners.forEach(function (w) { winSet[normName(w)] = true; });
+      g.players.forEach(function (p) {
+        var k = normName(p.name);
+        if (!k) return;
+        var s = stats[k] || (stats[k] = { name: p.name, games: 0, multi: 0, wins: 0, sum: 0, best: 0 });
+        s.name = p.name; // latest spelling wins
+        s.games += 1;
+        s.sum += p.total;
+        if (p.total > s.best) s.best = p.total;
+        if (multi) {
+          s.multi += 1;
+          if (winSet[k]) s.wins += 1;
+        }
+      });
+    });
+    var rows = Object.keys(stats).map(function (k) { return stats[k]; });
+    if (!rows.length) {
+      el('boardCard').innerHTML = '<div class="empty-state">No games yet.</div>';
+      return;
+    }
+    rows.forEach(function (s) {
+      s.avg = s.sum / s.games;
+      s.rate = s.multi ? s.wins / s.multi : 0;
+    });
+    rows.sort(function (a, b) { return b.wins - a.wins || b.rate - a.rate || b.avg - a.avg; });
+    el('boardCard').innerHTML = '<table class="board"><tr><th>Player</th><th>Wins</th><th>Win %</th><th>Avg</th><th>Best</th></tr>' +
+      rows.map(function (s, i) {
+        return '<tr' + (i === 0 && s.wins > 0 ? ' class="first"' : '') + '><td>' + esc(s.name) +
+          '<br><span style="font-weight:400;font-size:12px;color:var(--ink-soft)">' + s.games + ' game' + (s.games === 1 ? '' : 's') + '</span></td>' +
+          '<td>' + s.wins + '</td><td>' + (s.multi ? Math.round(s.rate * 100) + '%' : '-') + '</td>' +
+          '<td>' + s.avg.toFixed(1) + '</td><td>' + s.best + '</td></tr>';
+      }).join('') + '</table>';
+  }
+
+  // ---------- export / import ----------
+  el('exportBtn').addEventListener('click', function () {
+    if (!log.length) { toast('The log is empty'); return; }
+    var data = JSON.stringify({ app: 'harmonies-score', version: 1, exported: new Date().toISOString(), log: log }, null, 2);
+    var name = 'harmonies-log-' + new Date().toISOString().slice(0, 10) + '.json';
+    var file;
+    try { file = new File([data], name, { type: 'application/json' }); } catch (e) { file = null; }
+    if (file && navigator.canShare && navigator.canShare({ files: [file] })) {
+      navigator.share({ files: [file], title: 'Harmonies log' }).catch(function () {});
+      return;
+    }
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([data], { type: 'application/json' }));
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+  });
+
+  el('importFile').addEventListener('change', function (e) {
+    var f = e.target.files && e.target.files[0];
+    e.target.value = '';
+    if (!f) return;
+    var reader = new FileReader();
+    reader.onload = function () {
+      var parsed;
+      try { parsed = JSON.parse(reader.result); } catch (err) { toast('That file is not a log export'); return; }
+      var incoming = Array.isArray(parsed) ? parsed : parsed && parsed.log;
+      if (!Array.isArray(incoming)) { toast('That file is not a log export'); return; }
+      var have = {};
+      log.forEach(function (g) { have[g.id] = true; });
+      var added = 0;
+      incoming.forEach(function (g) {
+        if (g && g.id && Array.isArray(g.players) && Array.isArray(g.winners) && !have[g.id]) {
+          log.push(g); have[g.id] = true; added += 1;
+        }
+      });
+      log.sort(function (a, b) { return String(a.date).localeCompare(String(b.date)); });
+      persistLog();
+      renderBoard();
+      renderLog();
+      toast(added ? 'Imported ' + added + ' game' + (added === 1 ? '' : 's') : 'No new games in that file');
+    };
+    reader.readAsText(f);
+  });
+
+  // ---------- tabs ----------
+  var TITLES = { score: 'Harmonies', log: 'Game log', board: 'Leaderboard' };
+  document.querySelector('nav.tabs').addEventListener('click', function (e) {
+    var b = e.target.closest('button');
+    if (!b) return;
+    var tab = b.dataset.tab;
+    document.querySelectorAll('nav.tabs button').forEach(function (x) { x.classList.toggle('active', x === b); });
+    document.querySelectorAll('.view').forEach(function (v) { v.classList.toggle('active', v.id === 'view-' + tab); });
+    el('title').textContent = TITLES[tab];
+    el('addPlayerBtn').style.display = tab === 'score' ? '' : 'none';
+    if (tab === 'log') renderLog();
+    if (tab === 'board') renderBoard();
+    window.scrollTo(0, 0);
+  });
+
+  renderSheet();
+})();
+</script>
+</body>
+</html>
