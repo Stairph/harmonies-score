@@ -13,6 +13,7 @@ A phone version of the Harmonies paper score card for Steph's own games: add up 
 - Finish game saves to a log. Log tab, leaderboard tab, export/import JSON.
 - Autosave of the game in progress.
 - Official landscape and animal icons from the score card (Steph's call, 2026-10-24).
+- v1.1: record board side (A/B) and spirits (on/off) for every game. Solo mode (1 player) scores suns per the rule book, with a spirit card picker, and the leaderboard shows solo bests per setup.
 
 ## Out of scope
 

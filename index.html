@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Harmonies Score v1.0 - built by Steph, 2026 -->
+<!-- Harmonies Score v1.1 - built by Steph, 2026 -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -133,6 +133,30 @@ main { padding: 0 10px; }
 .sheet.tight .pname { font-size: 12px; }
 .sheet.tight .val.big { font-size: 19px; }
 
+/* ---------- game setup strip ---------- */
+.setup {
+  background: var(--paper); border: 1px solid var(--line); border-radius: var(--radius);
+  padding: 8px 10px; margin-bottom: 8px;
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px;
+}
+.setup .grp { display: flex; align-items: center; gap: 6px; }
+.setup .glab { font-size: 11px; font-weight: 700; color: var(--ink-soft); text-transform: uppercase; letter-spacing: 0.04em; }
+.solo-tag { width: 100%; font-size: 13px; font-weight: 700; color: var(--accent); }
+.seg { display: flex; background: var(--bg); border-radius: 999px; padding: 2px; }
+.seg button {
+  min-height: 34px; padding: 4px 12px; border-radius: 999px;
+  font-weight: 700; font-size: 14px; display: flex; align-items: center; gap: 4px;
+}
+.seg button.on { background: var(--accent); color: #fff; }
+.seg .ico { width: 28px; height: 28px; }
+.val.suns { flex-direction: column; height: auto; min-height: 52px; padding: 6px 4px; background: #F6D66B; color: #3A2614; text-align: center; }
+.val.suns b { font-size: 22px; font-weight: 800; }
+.val.suns small { font-size: 11px; font-weight: 600; opacity: 0.8; }
+.sun { color: #E0A21B; }
+.lab .sun { font-size: 26px; }
+.tag { display: inline-block; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 999px; background: var(--bg); color: var(--ink-soft); margin-top: 4px; }
+.sun-line { font-size: 13px; color: var(--ink-soft); margin: 8px 0 0; }
+
 .actions { display: flex; gap: 8px; margin: 12px 0; }
 .actions button {
   flex: 1; padding: 14px 8px; border-radius: var(--radius);
@@ -254,6 +278,7 @@ nav.tabs button.active { color: #FFF8EC; box-shadow: inset 0 3px 0 #FFF8EC; }
 <main>
   <!-- Score sheet -->
   <section class="view active" id="view-score">
+    <div class="setup" id="setup"></div>
     <div class="sheet-wrap"><div class="sheet" id="sheet"></div></div>
     <div class="actions">
       <button id="newGameBtn">Clear scores</button>
@@ -271,6 +296,11 @@ nav.tabs button.active { color: #FFF8EC; box-shadow: inset 0 3px 0 #FFF8EC; }
   <section class="view" id="view-board">
     <div class="card" style="padding: 4px 14px;" id="boardCard"></div>
     <p class="hint">Wins and win rate count games with 2 or more players. Ties share the win.</p>
+    <div id="soloWrap" style="display:none">
+      <div class="section-title">Solo bests</div>
+      <div class="card" style="padding: 4px 14px;" id="soloCard"></div>
+      <p class="hint">Best score and most suns for each setup, as the rule book suggests.</p>
+    </div>
     <div class="section-title">Backup</div>
     <div class="row-btns">
       <button id="exportBtn">Export log</button>
@@ -326,6 +356,13 @@ nav.tabs button.active { color: #FFF8EC; box-shadow: inset 0 3px 0 #FFF8EC; }
     { key: 'animals',   label: 'Animals',   color: 'var(--animals)', icon: 'icons/animals.png', tint: '#F4BD7C',   group: 'animal' }
   ];
   var MAX_PLAYERS = 6;
+  // Solo suns, from the rule book (p.11): score steps, +1 for side A,
+  // +2 with no spirit, +1 or +0 by the icon on the spirit card.
+  var SUN_STEPS = [40, 70, 90, 110, 130, 140, 150, 160];
+  var SPIRITS = {
+    house:    { label: 'House spirit',    icon: 'icons/spirit-house.png',    suns: 1 },
+    mountain: { label: 'Mountain spirit', icon: 'icons/spirit-mountain.png', suns: 0 }
+  };
   var GAME_KEY = 'harmonies.game.v1';
   var LOG_KEY = 'harmonies.log.v1';
 
@@ -349,6 +386,10 @@ nav.tabs button.active { color: #FFF8EC; box-shadow: inset 0 3px 0 #FFF8EC; }
   if (!game || !Array.isArray(game.players)) {
     game = { players: [newPlayer('Player 1'), newPlayer('Player 2')] };
   }
+  // Setup fields arrived in v1.1; older saved games get the defaults.
+  if (game.side !== 'B') game.side = 'A';
+  game.spirits = !!game.spirits;
+  if (!SPIRITS[game.spiritIcon]) game.spiritIcon = null;
   var log = load(LOG_KEY, []);
   if (!Array.isArray(log)) log = [];
 
@@ -375,6 +416,15 @@ nav.tabs button.active { color: #FFF8EC; box-shadow: inset 0 3px 0 #FFF8EC; }
     });
     return { byRow: byRow, land: land, animals: animals, total: land + animals };
   }
+  // total is null when spirits are on but the spirit card is not picked yet.
+  function sunsFor(points, side, spirits, spiritIcon) {
+    var score = 0;
+    SUN_STEPS.forEach(function (t) { if (points >= t) score += 1; });
+    var face = side === 'A' ? 1 : 0;
+    var spirit = !spirits ? 2 : (SPIRITS[spiritIcon] ? SPIRITS[spiritIcon].suns : null);
+    return { score: score, face: face, spirit: spirit, total: spirit === null ? null : score + face + spirit };
+  }
+  function isSolo() { return game.players.length === 1; }
   function hasAnyScore(p) {
     return ROWS.some(function (r) { return String(p.cells[r.key] || '').replace(/\+/g, '') !== ''; });
   }
@@ -443,12 +493,57 @@ nav.tabs button.active { color: #FFF8EC; box-shadow: inset 0 3px 0 #FFF8EC; }
       html += '<div class="val big' + (lead ? ' lead' : '') + '">' + s.total + '</div>';
     });
 
+    if (n === 1) {
+      var su = sunsFor(scores[0].total, game.side, game.spirits, game.spiritIcon);
+      html += '<div class="lab"><span class="sun">&#9728;</span></div>';
+      html += '<div class="val suns">' + (su.total === null
+        ? '<small>Pick your spirit card above to see suns</small>'
+        : '<b>' + su.total + ' <span class="sun">&#9728;</span></b><small>score ' + su.score + ' + side ' + su.face + ' + spirit ' + su.spirit + '</small>') +
+        '</div>';
+    }
+
     var sheet = el('sheet');
     sheet.style.gridTemplateColumns = '46px repeat(' + n + ', minmax(' + (n >= 6 ? 40 : n >= 5 ? 44 : 56) + 'px, 1fr))';
     sheet.classList.toggle('tight', n >= 5);
     sheet.innerHTML = html;
     el('addPlayerBtn').style.visibility = n >= MAX_PLAYERS ? 'hidden' : 'visible';
+    renderSetup();
   }
+
+  // ---------- game setup (board side, spirits) ----------
+  function seg(name, opts, current) {
+    return '<div class="seg" data-set="' + name + '">' + opts.map(function (o) {
+      var on = o.v === current;
+      return '<button data-v="' + o.v + '" class="' + (on ? 'on' : '') + '" aria-pressed="' + on + '"' +
+        (o.aria ? ' aria-label="' + esc(o.aria) + '"' : '') + '>' + o.h + '</button>';
+    }).join('') + '</div>';
+  }
+  function renderSetup() {
+    var solo = isSolo();
+    var html = solo ? '<div class="solo-tag">Solo mode: your score earns suns</div>' : '';
+    html += '<div class="grp"><span class="glab">Board</span>' +
+      seg('side', [{ v: 'A', h: 'A' }, { v: 'B', h: 'B' }], game.side) + '</div>';
+    html += '<div class="grp"><span class="glab">Spirits</span>' +
+      seg('spirits', [{ v: 'off', h: 'Off' }, { v: 'on', h: 'On' }], game.spirits ? 'on' : 'off') + '</div>';
+    if (solo && game.spirits) {
+      html += '<div class="grp"><span class="glab">Spirit card</span>' +
+        seg('spiritIcon', Object.keys(SPIRITS).map(function (k) {
+          var s = SPIRITS[k];
+          return { v: k, aria: s.label, h: '<img class="ico" src="' + s.icon + '" alt="">+' + s.suns };
+        }), game.spiritIcon || '') + '</div>';
+    }
+    el('setup').innerHTML = html;
+  }
+  el('setup').addEventListener('click', function (e) {
+    var b = e.target.closest('.seg button');
+    if (!b) return;
+    var what = b.parentElement.dataset.set, v = b.dataset.v;
+    if (what === 'side') game.side = v;
+    if (what === 'spirits') game.spirits = v === 'on';
+    if (what === 'spiritIcon') game.spiritIcon = v;
+    persistGame();
+    renderSheet();
+  });
 
   el('sheet').addEventListener('click', function (e) {
     var cell = e.target.closest('.cellbtn');
@@ -659,6 +754,8 @@ nav.tabs button.active { color: #FFF8EC; box-shadow: inset 0 3px 0 #FFF8EC; }
   // ---------- new / finish ----------
   function clearScores() {
     game.players.forEach(function (p) { p.cells = emptyCells(); });
+    // Side and spirits carry over; the spirit card is dealt fresh each game.
+    game.spiritIcon = null;
     persistGame();
     renderSheet();
   }
@@ -669,10 +766,11 @@ nav.tabs button.active { color: #FFF8EC; box-shadow: inset 0 3px 0 #FFF8EC; }
 
   el('finishBtn').addEventListener('click', function () {
     if (!game.players.some(hasAnyScore)) { toast('Enter some scores first'); return; }
+    if (isSolo() && game.spirits && !game.spiritIcon) { toast('Pick your spirit card first'); return; }
     var entry = buildEntry();
     var body = entry.players.length > 1
       ? 'Winner: ' + entry.winners.join(' & ') + ' with ' + entry.best + '. Saves to the log and clears the sheet.'
-      : 'Solo game, ' + entry.best + ' points. Saves to the log and clears the sheet.';
+      : 'Solo game, ' + entry.best + ' points, ' + entry.suns.total + ' suns. Saves to the log and clears the sheet.';
     confirmDialog('Finish game?', body, 'Save', function () {
       log.push(entry);
       persistLog();
@@ -688,8 +786,23 @@ nav.tabs button.active { color: #FFF8EC; box-shadow: inset 0 3px 0 #FFF8EC; }
     });
     var best = Math.max.apply(null, players.map(function (p) { return p.total; }));
     var winners = players.filter(function (p) { return p.total === best; }).map(function (p) { return p.name; });
-    return { id: uid(), date: new Date().toISOString(), players: players, winners: winners, best: best };
+    var entry = { id: uid(), date: new Date().toISOString(), players: players, winners: winners, best: best,
+      side: game.side, spirits: game.spirits };
+    if (players.length === 1) {
+      if (game.spirits) entry.spiritIcon = game.spiritIcon;
+      entry.suns = sunsFor(best, game.side, game.spirits, game.spiritIcon);
+    }
+    return entry;
   }
+
+  // Games saved before v1.1 have no side, so they get no tag.
+  function setupTag(g) {
+    if (g.side !== 'A' && g.side !== 'B') return '';
+    var t = 'Side ' + g.side;
+    if (g.spirits) t += SPIRITS[g.spiritIcon] ? ' &middot; ' + SPIRITS[g.spiritIcon].label : ' &middot; Spirits';
+    return '<span class="tag">' + t + '</span>';
+  }
+  function hasSuns(g) { return g.suns && typeof g.suns.total === 'number'; }
 
   // ---------- log ----------
   function fmtDate(iso) {
@@ -710,9 +823,11 @@ nav.tabs button.active { color: #FFF8EC; box-shadow: inset 0 3px 0 #FFF8EC; }
       var sorted = g.players.slice().sort(function (a, b) { return b.total - a.total; });
       var who = g.players.length > 1
         ? esc(g.winners.join(' & ')) + ' won, ' + g.best
-        : esc(g.players[0].name) + ', solo, ' + g.best;
+        : esc(g.players[0].name) + ', solo, ' + g.best + (hasSuns(g) ? ', ' + g.suns.total + ' <span class="sun">&#9728;</span>' : '');
+      var tag = setupTag(g);
       html += '<div class="card" data-id="' + esc(g.id) + '">' +
-        '<button class="game-head"><span><span class="who">' + who + '</span><br><span class="date">' + esc(fmtDate(g.date)) + '</span></span>' +
+        '<button class="game-head"><span><span class="who">' + who + '</span><br><span class="date">' + esc(fmtDate(g.date)) + '</span>' +
+        (tag ? '<br>' + tag : '') + '</span>' +
         '<span class="date">' + g.players.length + 'P</span></button>' +
         '<div class="game-body"><table class="mini"><tr><th></th>' +
         sorted.map(function (p) { return '<th>' + esc(p.name) + '</th>'; }).join('') + '</tr>' +
@@ -721,7 +836,9 @@ nav.tabs button.active { color: #FFF8EC; box-shadow: inset 0 3px 0 #FFF8EC; }
             sorted.map(function (p) { return '<td>' + ((p.rows && p.rows[r.key]) || 0) + '</td>'; }).join('') + '</tr>';
         }).join('') +
         '<tr><td><b>Total</b></td>' + sorted.map(function (p) { return '<td><b>' + p.total + '</b></td>'; }).join('') + '</tr>' +
-        '</table><button class="danger" data-del="' + esc(g.id) + '">Delete this game</button></div></div>';
+        '</table>' +
+        (hasSuns(g) ? '<p class="sun-line">' + g.suns.total + ' suns: score ' + g.suns.score + ' + side ' + g.suns.face + ' + spirit ' + g.suns.spirit + '</p>' : '') +
+        '<button class="danger" data-del="' + esc(g.id) + '">Delete this game</button></div></div>';
     });
     list.innerHTML = html;
   }
@@ -762,6 +879,7 @@ nav.tabs button.active { color: #FFF8EC; box-shadow: inset 0 3px 0 #FFF8EC; }
         }
       });
     });
+    renderSoloBests();
     var rows = Object.keys(stats).map(function (k) { return stats[k]; });
     if (!rows.length) {
       el('boardCard').innerHTML = '<div class="empty-state">No games yet.</div>';
@@ -778,6 +896,37 @@ nav.tabs button.active { color: #FFF8EC; box-shadow: inset 0 3px 0 #FFF8EC; }
           '<br><span style="font-weight:400;font-size:12px;color:var(--ink-soft)">' + s.games + ' game' + (s.games === 1 ? '' : 's') + '</span></td>' +
           '<td>' + s.wins + '</td><td>' + (s.multi ? Math.round(s.rate * 100) + '%' : '-') + '</td>' +
           '<td>' + s.avg.toFixed(1) + '</td><td>' + s.best + '</td></tr>';
+      }).join('') + '</table>';
+  }
+
+  // One row per solo setup: side, then no spirit / house / mountain.
+  function renderSoloBests() {
+    var groups = {};
+    log.forEach(function (g) {
+      if (!g.players || g.players.length !== 1) return;
+      var key;
+      if (g.side !== 'A' && g.side !== 'B') key = 'z';
+      else key = g.side + (!g.spirits ? '0none' : SPIRITS[g.spiritIcon] ? (g.spiritIcon === 'house' ? '1house' : '2mountain') : '3spirit');
+      var s = groups[key] || (groups[key] = { key: key, g: g, games: 0, best: 0, suns: null });
+      s.games += 1;
+      if (g.best > s.best) s.best = g.best;
+      if (hasSuns(g) && (s.suns === null || g.suns.total > s.suns)) s.suns = g.suns.total;
+    });
+    var keys = Object.keys(groups).sort();
+    if (!keys.length) { el('soloWrap').style.display = 'none'; return; }
+    el('soloWrap').style.display = '';
+    el('soloCard').innerHTML = '<table class="board"><tr><th>Setup</th><th>Games</th><th>Best</th><th>Suns</th></tr>' +
+      keys.map(function (k) {
+        var s = groups[k], g = s.g, label;
+        if (k === 'z') label = 'Not recorded';
+        else {
+          label = 'Side ' + g.side + ', ';
+          if (!g.spirits) label += 'no spirit';
+          else if (SPIRITS[g.spiritIcon]) label += '<img class="ico xs" src="' + SPIRITS[g.spiritIcon].icon + '" alt=""> ' + SPIRITS[g.spiritIcon].label.toLowerCase();
+          else label += 'spirit';
+        }
+        return '<tr><td style="font-weight:600">' + label + '</td><td>' + s.games + '</td><td>' + s.best + '</td><td>' +
+          (s.suns === null ? '-' : s.suns + ' <span class="sun">&#9728;</span>') + '</td></tr>';
       }).join('') + '</table>';
   }
 
